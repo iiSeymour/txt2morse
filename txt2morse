@@ -2,77 +2,86 @@
 
 class MorseCoder(object):
 
-   code = {
-      'A' : '.-',     'B' : '-...',      'C' : '-.-.',      'D' : '-..',
-      'E' : '.',      'F' : '..-.',      'G' : '--.',       'H' : '....',
-      'I' : '..',     'J' : '.---',      'K' : '-.-',       'L' : '.-..',
-      'M' : '--',     'N' : '-.',        'O' : '---',       'P' : '.--.',
-      'Q' : '--.-',   'R' : '.-.',       'S' : '...',       'T' : '-',
-      'U' : '..-',    'V' : '...-',      'W' : '.--',       'Y' : '-..-',
-      'X' : '-.--',   'Z' : '--..',      '1' : '.----',     '2' : '..---',
-      '3' : '...--',  '4' : '....-',     '5' : '.....',     '6' : '-....',
-      '7' : '--...',  '8' : '---..',     '9' : '----.',     '0' : '-----',
-      ' ' : '  '
-   }
+    code = {
+        'A' : '.-',     'B' : '-...',      'C' : '-.-.',      'D' : '-..',
+        'E' : '.',      'F' : '..-.',      'G' : '--.',       'H' : '....',
+        'I' : '..',     'J' : '.---',      'K' : '-.-',       'L' : '.-..',
+        'M' : '--',     'N' : '-.',        'O' : '---',       'P' : '.--.',
+        'Q' : '--.-',   'R' : '.-.',       'S' : '...',       'T' : '-',
+        'U' : '..-',    'V' : '...-',      'W' : '.--',       'Y' : '-..-',
+        'X' : '-.--',   'Z' : '--..',      '1' : '.----',     '2' : '..---',
+        '3' : '...--',  '4' : '....-',     '5' : '.....',     '6' : '-....',
+        '7' : '--...',  '8' : '---..',     '9' : '----.',     '0' : '-----',
+        ' ' : '  '
+    }
 
-   def __init__(self, decode=False):
-      '''
-      Class constructor: make dictionary a two way lookup hash for decoding
-                         choose the cipher direction
-      '''
-      if decode:
-         self.code.update(dict(zip(self.code.values(), self.code.keys())))
-         self.cipher = self.decode
-      else:
-         self.cipher = self.encode
+    def __init__(self, decode=False):
+        '''
+        Class constructor: make dictionary a two way lookup hash for decoding
+                           choose the cipher direction
+        '''
+        if decode:
+            self.code.update(dict(zip(self.code.values(), self.code.keys())))
+            self.cipher = self.decode
+        else:
+            self.cipher = self.encode
 
-      return
+        return
 
-   def encode(self, message):
-      '''
-      Convert alphanumeric message to morse code
-      '''
-      try:
-         return ' '.join([self.code[char] for char in message.upper()])
-      except KeyError:
-         return ' '.join([self.code[char] for char in self.clean(message.upper())])
+    def encode(self, message):
+        '''
+        Convert alphanumeric message to morse code
+        '''
+        try:
+            return ' '.join([self.code[char] for char in message.upper()])
+        except KeyError:
+            return ' '.join([self.code[char] for char in self.clean(message.upper())])
 
-   def decode(self, message):
-      '''
-      Convert morse code to alphanumeric message
-      '''
-      secret = str()
-      for word in message.split('   '):
-         for char in word.split():
-            secret += self.code[char]
-         secret += ' '
-      return secret
+    def decode(self, message):
+        '''
+        Convert morse code to alphanumeric message
+        '''
+        secret = str()
+        for word in message.split('   '):
+            for char in word.split():
+                secret += self.code[char]
+            secret += ' '
+        return secret
 
-   def clean(self, message):
-      '''
-      Strip any non-alphanumeric characters
-      '''
-      dirty = re.compile('[\W_]+')
-      return dirty.sub('', message)
+    def clean(self, message):
+        '''
+        Strip any non-alphanumeric characters
+        '''
+        dirty = re.compile('[\W_]+')
+        return dirty.sub('', message)
 
 
-def main(args):
+def main(args, help):
 
-   morse = MorseCoder(args.decode)
+    morse = MorseCoder(args.decode)
 
-   for line in fileinput.input():
-      print morse.cipher(line.strip())
+    if not (select.select([sys.stdin,],[],[],0.0)[0] or args.files):
+        help()
+        return
 
-   return
+    try:
+        for line in fileinput.input(args.files, args.inplace):
+            print morse.cipher(line.strip())
+
+    except IOError:
+        sys.stderr.write("%s: No such file %s\n" % (os.path.basename(__file__), fileinput.filename()))
+
+    return
 
 if __name__ == "__main__":
-   import re, argparse, fileinput
-   parser = argparse.ArgumentParser()
-   parser.add_argument("-e", "--encode", action="store_true",
+    import re, os, sys, select, argparse, fileinput
+    parser = argparse.ArgumentParser()
+    parser.add_argument('files', nargs='*', help='input files')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-e", "--encode", action="store_true",
                        default=True, help="encode text to morse code (default)")
-   parser.add_argument("-d", "--decode", action="store_true",
+    group.add_argument("-d", "--decode", action="store_true",
                        default=False, help="decode morse code to text")
-   parser.add_argument("-i", "--inplace", action="store_true",
-                       default=False, help="store the results back to input file")
-   parser.add_argument('FILE', nargs='+', type=argparse.FileType('r'))
-   main(parser.parse_args())
+    parser.add_argument("-i", "--inplace", action="store_true",
+                        default=False, help="store the results back to input file")
+    main(parser.parse_args(), parser.print_help)
