@@ -64,6 +64,9 @@ def main(args, help):
         help()
         return
 
+    if args.output and args.output != '-':
+        sys.stdout = open(args.output, 'w')
+
     try:
         for line in fileinput.input(args.files, args.inplace):
             print morse.cipher(line.strip())
@@ -76,12 +79,16 @@ def main(args, help):
 if __name__ == "__main__":
     import re, os, sys, select, argparse, fileinput
     parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=30),
+                                     description="Convert text to morse code.")
     parser.add_argument('files', nargs='*', help='input files')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("-e", "--encode", action="store_true",
+    encoding = parser.add_mutually_exclusive_group()
+    encoding.add_argument("-e", "--encode", action="store_true",
                        default=True, help="encode text to morse code (default)")
-    group.add_argument("-d", "--decode", action="store_true",
+    encoding.add_argument("-d", "--decode", action="store_true",
                        default=False, help="decode morse code to text")
-    parser.add_argument("-i", "--inplace", action="store_true",
-                        default=False, help="store the results back to input file")
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument("-i", "--inplace", action="store_true",
+                        default=False, help="store the results back to the input file")
+    output.add_argument('-o', '--output', help='output file (default is stdout)')
     main(parser.parse_args(), parser.print_help)
